@@ -1,0 +1,6 @@
+@tovutigrpapi_HostAddress = http://localhost:5094
+
+GET {{tovutigrpapi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
