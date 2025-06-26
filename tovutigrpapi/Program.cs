@@ -24,17 +24,21 @@ builder.Services.AddSingleton<DataContext>();
 builder.Services.AddScoped<IIssues, IssueCategoryRepository>();
 //builder.Services.AddScoped<ISparePart, SparePartRepository>();
 builder.Services.AddScoped<ISparePart, SparePartRepository>();
+//builder.Services.AddScoped<IClients, ClientsRepository>();
+builder.Services.AddScoped<IClients, ClientRepository>();
 
 
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+//if (app.Environment.IsDevelopment())
+//{
+    
+//}
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 

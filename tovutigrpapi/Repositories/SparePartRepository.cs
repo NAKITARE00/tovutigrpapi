@@ -53,5 +53,39 @@ namespace tovutigrpapi.Repositories
                 return await connection.QueryFirstOrDefaultAsync<SparePart>(sql, new { SparePartId = sparePartId });
             }
         }
+
+        public async Task<string> UpdateSparePart(SparePart part)
+        {
+            string sql = @"
+                UPDATE Spare_Parts
+                SET Name = @Name,
+                    Cost = @Cost
+                WHERE Id = @Id;
+            ";
+
+            using (IDbConnection connection = _dataContext.CreateConnection())
+            {
+                var result = await connection.ExecuteAsync(sql, new
+                {
+                    part.Id,
+                    part.Name,
+                    part.Cost
+                });
+
+                return result > 0 ? "Spare part updated successfully." : "Failed to update spare part or part not found.";
+            }
+        }
+
+        public async Task<string> DeleteSparePart(int sparePartId)
+        {
+            string sql = "DELETE FROM Spare_Parts WHERE Id = @SparePartId;";
+
+            using (IDbConnection connection = _dataContext.CreateConnection())
+            {
+                var result = await connection.ExecuteAsync(sql, new { SparePartId = sparePartId });
+
+                return result > 0 ? "Spare part deleted successfully." : "Spare part not found or could not be deleted.";
+            }
+        }
     }
 }

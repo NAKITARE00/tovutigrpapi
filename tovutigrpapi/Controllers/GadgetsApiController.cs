@@ -60,5 +60,52 @@ namespace tovutigrpapi.Controllers
             return Ok(result);
         }
 
+        [HttpPut("UpdateGadget")]
+        public async Task<IActionResult> UpdateGadget([FromBody] Gadgets gadget)
+        {
+            if (gadget == null || gadget.Id == 0)
+                return BadRequest("Invalid gadget data.");
+
+            try
+            {
+                var result = await gadgets.UpdateGadget(gadget);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("station/{stationId}/gadgets")]
+        public async Task<IActionResult> GetGadgetsByStationId(int stationId)
+        {
+            try
+            {
+                var gadgetsList = await gadgets.GetGadgetsByStationId(stationId); 
+                return Ok(gadgetsList);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpDelete("DeleteGadget/{id}")]
+        public async Task<IActionResult> DeleteGadget(int id)
+        {
+            try
+            {
+                var result = await gadgets.DeleteGadget(id);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+
+
     }
 }

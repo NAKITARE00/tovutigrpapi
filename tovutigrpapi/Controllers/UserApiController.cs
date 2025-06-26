@@ -46,6 +46,53 @@ namespace tovutigrpapi.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
+        [HttpGet("get-single-user/{id}")]
+        public async Task<IActionResult> GetSingleUser(int id)
+        {
+            try
+            {
+                var user = await _users.GetSingleUser(id);
+                if (user == null)
+                    return NotFound($"User with ID {id} not found.");
+
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpPut("UpdateUser")]
+        public async Task<IActionResult> UpdateUser([FromBody] Users user)
+        {
+            if (user == null || user.Id <= 0)
+                return BadRequest("Invalid user data.");
+
+            try
+            {
+                string result = await _users.UpdateUser(user);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpDelete("DeleteUser/{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            try
+            {
+                string result = await _users.DeleteUser(id);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
     }
 }
-

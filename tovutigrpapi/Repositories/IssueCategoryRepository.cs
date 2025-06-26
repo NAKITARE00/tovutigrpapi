@@ -9,6 +9,7 @@ namespace tovutigrpapi.Repositories
     public class IssueCategoryRepository : IIssues
     {
         private readonly DataContext _dataContext;
+
         public IssueCategoryRepository(DataContext dataContext)
         {
             _dataContext = dataContext;
@@ -28,17 +29,9 @@ namespace tovutigrpapi.Repositories
                     issues.Issue,
                     issues.Gadget_Id
                 });
-                if (result > 0)
-                {
-                    return "Issue added successfully.";
-                }
-                else
-                {
-                    return "Failed to add issue.";
-                }
+                return result > 0 ? "Issue added successfully." : "Failed to add issue.";
             }
         }
-
         public async Task<IEnumerable<Issues>> GetAllIssues()
         {
             string sql = "SELECT * FROM Issues";
@@ -51,19 +44,51 @@ namespace tovutigrpapi.Repositories
         public async Task<IssueRetrieval> GetSingleIssue(int issueId)
         {
             string sql = @"
-            SELECT 
-                i.Id AS IssueId,
-                i.Name,
-                i.Issue,
-                i.Gadget_Id,
-                g.Name AS GadgetName
-            FROM Issues i
-            JOIN Gadgets g ON i.Gadget_Id = g.Id
-            WHERE i.Id = @IssueId;
+                SELECT 
+                    i.Id AS IssueId,
+                    i.Name,
+                    i.Issue,
+                    i.Gadget_Id,
+                    g.Name AS GadgetName
+                FROM Issues i
+                JOIN Gadgets g ON i.Gadget_Id = g.Id
+                WHERE i.Id = @IssueId;
             ";
             using (IDbConnection connection = _dataContext.CreateConnection())
             {
                 return await connection.QueryFirstOrDefaultAsync<IssueRetrieval>(sql, new { IssueId = issueId });
+            }
+        }
+
+        public async Task<string> UpdateIssue(Issues issues)
+        {
+            string sql = @"
+                UPDATE Issues
+                SET Name = @Name,
+                    Issue = @Issue,
+                    Gadget_Id = @Gadget_Id
+                WHERE Id = @Id;
+            ";
+            using (IDbConnection connection = _dataContext.CreateConnection())
+            {
+                var result = await connection.ExecuteAsync(sql, new
+                {
+                    issues.Id,
+                    issues.Name,
+                    issues.Issue,
+                    issues.Gadget_Id
+                });
+                return result > 0 ? "Issue updated successfully." : "Issue not found or update failed.";
+            }
+        }
+
+        public async Task<string> DeleteIssue(int issueId)
+        {
+            string sql = "DELETE FROM Issues WHERE Id = @Id;";
+            using (IDbConnection connection = _dataContext.CreateConnection())
+            {
+                var result = await connection.ExecuteAsync(sql, new { Id = issueId });
+                return result > 0 ? "Issue deleted successfully." : "Issue not found or could not be deleted.";
             }
         }
     }

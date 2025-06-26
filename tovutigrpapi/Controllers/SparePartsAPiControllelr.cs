@@ -66,5 +66,39 @@ namespace tovutigrpapi.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
+        [HttpPut("UpdateSparePart")]
+        public async Task<IActionResult> UpdateSparePart([FromBody] SparePart part)
+        {
+            if (part == null || part.Id <= 0)
+            {
+                return BadRequest("Invalid spare part data.");
+            }
+
+            try
+            {
+                string result = await _sparePartService.UpdateSparePart(part);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpDelete("DeleteSparePart/{id}")]
+        public async Task<IActionResult> DeleteSparePart(int id)
+        {
+            try
+            {
+                string result = await _sparePartService.DeleteSparePart(id);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
     }
 }
+
