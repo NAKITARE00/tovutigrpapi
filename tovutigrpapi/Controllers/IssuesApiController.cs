@@ -16,11 +16,11 @@ namespace tovutigrpapi.Controllers
         }
 
         [HttpGet("GetAllIssues")]
-        public async Task<IActionResult> GetAllIssues()
+        public async Task<IActionResult> GetAllIssues(int staff_id)
         {
             try
             {
-                var issuesList = await _issuesService.GetAllIssues();
+                var issuesList = await _issuesService.GetAllIssues(staff_id);
                 return Ok(issuesList);
             }
             catch (Exception ex)
@@ -30,14 +30,14 @@ namespace tovutigrpapi.Controllers
         }
 
         [HttpPost("AddIssue")]
-        public async Task<IActionResult> AddIssue([FromBody] Issues issue)
+        public async Task<IActionResult> AddIssue([FromBody] Issues issue, int staff_id)
         {
             if (issue == null)
                 return BadRequest("Issue data is null.");
 
             try
             {
-                string result = await _issuesService.AddIssue(issue);
+                string result = await _issuesService.AddIssue(issue, staff_id);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -47,11 +47,11 @@ namespace tovutigrpapi.Controllers
         }
 
         [HttpGet("single-issue/{issueId}")]
-        public async Task<IActionResult> GetSingleIssue(int issueId)
+        public async Task<IActionResult> GetSingleIssue(int issueId, int staff_id)
         {
             try
             {
-                var result = await _issuesService.GetSingleIssue(issueId);
+                var result = await _issuesService.GetSingleIssue(issueId, staff_id);
                 if (result == null)
                     return NotFound($"Issue with ID {issueId} not found.");
 
@@ -64,14 +64,14 @@ namespace tovutigrpapi.Controllers
         }
 
         [HttpPut("UpdateIssue")]
-        public async Task<IActionResult> UpdateIssue([FromBody] Issues issue)
+        public async Task<IActionResult> UpdateIssue([FromBody] Issues issue, int staff_id)
         {
             if (issue == null || issue.Id == 0)
                 return BadRequest("Invalid issue data.");
 
             try
             {
-                var result = await _issuesService.UpdateIssue(issue);
+                var result = await _issuesService.UpdateIssue(issue, staff_id);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -81,11 +81,11 @@ namespace tovutigrpapi.Controllers
         }
 
         [HttpDelete("DeleteIssue/{id}")]
-        public async Task<IActionResult> DeleteIssue(int id)
+        public async Task<IActionResult> DeleteIssue(int id, int staff_id)
         {
             try
             {
-                var result = await _issuesService.DeleteIssue(id);
+                var result = await _issuesService.DeleteIssue(id, staff_id);
                 return Ok(result);
             }
             catch (Exception ex)

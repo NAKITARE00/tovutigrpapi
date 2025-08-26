@@ -21,20 +21,31 @@ namespace tovutigrpapi.Repositories
 
             using (IDbConnection connection = _dataContext.CreateConnection())
             {
-                return await connection.QueryAsync<SparePart>(sql);
+                var spareParts = await connection.QueryAsync<SparePart>(sql);
+
+                foreach (var part in spareParts)
+                {
+                    var gadgetNames = await connection.QueryAsync<string>(@"
+                        SELECT g.Name 
+                        FROM Gadgets g
+                        JOIN Gadget_SpareParts gsp ON g.Id = gsp.gadget_id
+                        WHERE gsp.sparepart_id = @sparepart_id", new { sparepart_id = part.Id });
+
+                    part.LinkedGadgetNames = gadgetNames.ToList();
+                }
+                return spareParts;
             }
         }
-
         public async Task<string> AddSparePart(SparePart part)
         {
             string sql = @"
-                INSERT INTO Spare_Parts (Name, Cost)
-                VALUES (@Name, @Cost);
+                INSERT INTO Spare_Parts (Name, Cost, Status, Station_Id)
+                VALUES (@Name, @Cost, @Status, @Station_Id);
             ";
 
             using (IDbConnection connection = _dataContext.CreateConnection())
             {
-                var result = await connection.ExecuteAsync(sql, new { part.Name, part.Cost });
+                var result = await connection.ExecuteAsync(sql, new { part.Name, part.Cost, part.Status, part.Station_Id });
 
                 return result > 0 ? "Spare part added successfully." : "Failed to add spare part.";
             }
@@ -43,14 +54,34 @@ namespace tovutigrpapi.Repositories
         public async Task<SparePart> GetSingleSparePart(int sparePartId)
         {
             string sql = @"
-                SELECT Id, Name, Cost
-                FROM Spare_Parts
-                WHERE Id = @SparePartId;
-            ";
+                SELECT 
+                    sp.Id, 
+                    sp.Name, 
+                    sp.Cost, 
+                    sp.Status, 
+                    sp.Station_Id, 
+                    st.Name as Station_Name
+                FROM Spare_Parts Sp
+                LEFT JOIN Station st ON sp.Station_Id = st.Id
+                WHERE sp.Id = @sparepart_id;
+                ";
 
             using (IDbConnection connection = _dataContext.CreateConnection())
             {
-                return await connection.QueryFirstOrDefaultAsync<SparePart>(sql, new { SparePartId = sparePartId });
+                var part = await connection.QueryFirstOrDefaultAsync<SparePart>(sql, new { sparepart_id = sparePartId });
+
+                if (part != null)
+                {
+                    var gadgetNames = await connection.QueryAsync<string>(@"
+                        SELECT g.Name 
+                        FROM Gadgets g
+                        JOIN Gadget_SpareParts gsp ON g.Id = gsp.gadget_id
+                        WHERE gsp.sparepart_id = @sparepart_id", new { sparepart_id = part.Id });
+
+                    part.LinkedGadgetNames = gadgetNames.ToList();
+                }
+
+                return part;
             }
         }
 
@@ -59,7 +90,9 @@ namespace tovutigrpapi.Repositories
             string sql = @"
                 UPDATE Spare_Parts
                 SET Name = @Name,
-                    Cost = @Cost
+                    Cost = @Cost,
+                    Status = @Status,
+                    Station_Id = @Station_Id
                 WHERE Id = @Id;
             ";
 
@@ -69,7 +102,9 @@ namespace tovutigrpapi.Repositories
                 {
                     part.Id,
                     part.Name,
-                    part.Cost
+                    part.Cost,
+                    part.Status,
+                    part.Station_Id
                 });
 
                 return result > 0 ? "Spare part updated successfully." : "Failed to update spare part or part not found.";
@@ -78,14 +113,16 @@ namespace tovutigrpapi.Repositories
 
         public async Task<string> DeleteSparePart(int sparePartId)
         {
-            string sql = "DELETE FROM Spare_Parts WHERE Id = @SparePartId;";
-
             using (IDbConnection connection = _dataContext.CreateConnection())
-            {
-                var result = await connection.ExecuteAsync(sql, new { SparePartId = sparePartId });
+            {   
+                await connection.ExecuteAsync("DELETE FROM Gadget_SpareParts WHERE sparepart_id = @sparepart_id", new { sparepart_id = sparePartId });
+
+                var result = await connection.ExecuteAsync("DELETE FROM Spare_Parts WHERE Id = @sparepart_id", new { sparepart_id = sparePartId });
 
                 return result > 0 ? "Spare part deleted successfully." : "Spare part not found or could not be deleted.";
             }
         }
     }
 }
+
+
