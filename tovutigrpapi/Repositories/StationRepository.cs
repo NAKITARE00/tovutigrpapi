@@ -48,10 +48,9 @@ namespace tovutigrpapi.Repositories
             }
         }
 
-
         public async Task<IEnumerable<Stations>> GetAllStations(int staff_id)
         {
-            var (_, roleName, _, clientId, station_id) = await _authorizationService.GetUserRole(staff_id);
+            var (userType, roleName, _, clientId, station_id) = await _authorizationService.GetUserRole(staff_id);
             if (string.IsNullOrEmpty(roleName))
                 throw new UnauthorizedAccessException("User has no assigned role.");
 
@@ -65,9 +64,14 @@ namespace tovutigrpapi.Repositories
             {
                 sql = "SELECT * FROM Station";
             }
-            else if (roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase))
+            else if (userType == "Administrator" &&  roleName == "Manager" )
             {
                 sql = "SELECT * FROM Station WHERE Client_Id = @ClientId";
+                parameters = new { ClientId = clientId };
+            }
+            else if (userType == "Supervisor" && roleName == "Manager")
+            {
+                sql = "SELECT * FROM Station WHERE Id = @StationId";
                 parameters = new { ClientId = clientId };
             }
             else if (roleName.Equals("Normal", StringComparison.OrdinalIgnoreCase))
@@ -85,51 +89,40 @@ namespace tovutigrpapi.Repositories
                 return await connection.QueryAsync<Stations>(sql, parameters);
             }
         }
-
-
         public async Task<IEnumerable<StationRetrieval>> GetSingleStation(int stationId, int staff_id)
         {
-            var (_, roleName, _, clientId, _) = await _authorizationService.GetUserRole(staff_id);
+            var (userType, roleName, _, clientId, _) = await _authorizationService.GetUserRole(staff_id);
             if (string.IsNullOrEmpty(roleName))
                 throw new UnauthorizedAccessException("User has no assigned role.");
 
-            if (roleName != "Admin" && roleName != "Manager" && roleName != "Normal")
-                throw new UnauthorizedAccessException("User role not recognized.");
+            string sql = "SELECT s.Id, s.Name, s.Station, s.Location, s.Client_Id, s.Date_Created, s.Status, c.Name AS ClientName, c.Country AS ClientCountry " +
+                         "FROM Station s LEFT JOIN Clients c ON s.Client_Id = c.Id WHERE s.Id = @StationId";
 
-            string sql = @"
-        SELECT 
-            s.Id,
-            s.Name,
-            s.Station,
-            s.Location,
-            s.Client_Id,
-            s.Date_Created,
-            s.Status,
-            c.Name AS ClientName,
-            c.Country AS ClientCountry
-        FROM Station s
-        LEFT JOIN Clients c ON s.Client_Id = c.Id
-        WHERE s.Id = @StationId
-        ";
-            if (!roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            if ( userType == "Administrator" && roleName == "Manager")
             {
-                sql += " AND s.Client_Id = @ClientId AND s.Id = @StationIdCheck";
+                sql += " AND s.Client_Id = @ClientId";
             }
-
+            else if (roleName == "Normal" || userType == "Supervisor")
+            {
+                sql += " AND s.Id = @StationId"; 
+            }
+       
+            else if (!roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new UnauthorizedAccessException("User role not recognized.");
+            }
             using (IDbConnection connection = _dataContext.CreateConnection())
             {
                 return await connection.QueryAsync<StationRetrieval>(sql, new
                 {
                     StationId = stationId,
-                    ClientId = clientId,
-                    StationIdCheck = stationId,
-
+                    ClientId = clientId
                 });
             }
         }
         public async Task<IEnumerable<StationRetrieval>> GetStationsByClientId(int clientId, int staff_id)
         {
-            var (_, roleName, _, client_Id, station_id) = await _authorizationService.GetUserRole(staff_id);
+            var (userType, roleName, _, client_Id, station_id) = await _authorizationService.GetUserRole(staff_id);
             if (string.IsNullOrEmpty(roleName))
                 throw new UnauthorizedAccessException("User has no assigned role.");
 
@@ -144,17 +137,17 @@ namespace tovutigrpapi.Repositories
             string sql;
             object parameters;
 
-            if (roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            if (roleName == "Admin")
             {
                 sql = baseSql + " WHERE s.Client_Id = @ClientId;";
                 parameters = new { ClientId = clientId };
             }
-            else if (roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase))
+            else if (userType == "Administrator" && roleName == "Manager")
             {
                 sql = baseSql + " WHERE s.Client_Id = @ClientId;";
                 parameters = new { ClientId = client_Id };
             }
-            else if (roleName.Equals("Normal", StringComparison.OrdinalIgnoreCase))
+            else if (roleName == "Normal")
             {
                 sql = baseSql + " WHERE s.Client_Id = @ClientId AND s.Id = @StationId;";
                 parameters = new { ClientId = client_Id, StationId = station_id };
@@ -180,8 +173,8 @@ namespace tovutigrpapi.Repositories
             if (roleName != "Admin" && roleName != "Manager" && roleName != "Normal")
                 throw new UnauthorizedAccessException("User role not recognized.");
 
-            if (roleName.Equals("Normal", StringComparison.OrdinalIgnoreCase))
-                return "Access denied. Operators cannot update stations.";
+            if (!roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                throw new UnauthorizedAccessException( "Unauthorized Request");
 
             string sql = @"UPDATE Station 
                    SET Name=@Name, Station=@Station, Location=@Location, 

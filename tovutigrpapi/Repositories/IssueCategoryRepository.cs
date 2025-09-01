@@ -30,7 +30,6 @@ namespace tovutigrpapi.Repositories
 
             using (IDbConnection connection = _dataContext.CreateConnection())
             {
-                // ✅ If Manager, verify station belongs to their Client_Id
                 if (roleName == "Manager")
                 {
                     string validateSql = @"
@@ -68,7 +67,6 @@ namespace tovutigrpapi.Repositories
             }
         }
 
-
         public async Task<IEnumerable<Issues>> GetAllIssues(int staff_id)
         {
             var (userType, roleName, staffId, clientId, stationId) = await _authorizationService.GetUserRole(staff_id);
@@ -93,7 +91,7 @@ namespace tovutigrpapi.Repositories
 
                     return await connection.QueryAsync<Issues>(sql);
                 }
-                else if (roleName == "Manager")
+                else if (userType == "Administrator" && roleName == "Manager")
                 {
                     sql = @"
                 SELECT i.* 
@@ -104,7 +102,8 @@ namespace tovutigrpapi.Repositories
 
                     return await connection.QueryAsync<Issues>(sql, new { ClientId = clientId });
                 }
-                else // Normal
+                //Normal Role & UserType Supervisor
+                else
                 {
                     sql = @"
                 SELECT i.* 
@@ -144,10 +143,9 @@ namespace tovutigrpapi.Repositories
                 if (issue == null)
                     throw new KeyNotFoundException("Issue not found.");
 
-                if (roleName == "Manager" && issueClientId != clientId)
+                if (userType == "Administrator" && roleName == "Manager" && issueClientId != clientId)
                     throw new UnauthorizedAccessException("Manager not authorized to view this issue.");
-
-                if (roleName == "Normal" && issue.Station_Id != stationId)
+                if ((roleName == "Normal" || userType == "Supervisor")  && issue.Station_Id != stationId)
                     throw new UnauthorizedAccessException("User not authorized to view this issue.");
 
                 return issue;
@@ -155,7 +153,7 @@ namespace tovutigrpapi.Repositories
         }
         public async Task<string> UpdateIssue(Issues issues, int staff_id)
         {
-            var (_, roleName, _, clientId, station_id) = await _authorizationService.GetUserRole(staff_id);
+            var (userType, roleName, _, clientId, station_id) = await _authorizationService.GetUserRole(staff_id);
             if (string.IsNullOrEmpty(roleName))
                 throw new UnauthorizedAccessException("User has no assigned role.");
             if (roleName != "Admin" && roleName != "Manager")
@@ -170,7 +168,9 @@ namespace tovutigrpapi.Repositories
                 if (issueClientId == null)
                     throw new KeyNotFoundException("Issue not found.");
 
-                if (roleName == "Manager" && issueClientId != clientId)
+                if (userType == "Administrator" && roleName == "Manager" && issueClientId != clientId)
+                    throw new UnauthorizedAccessException("You are not authorized to update this issue.");
+                if (userType == "Supervisor" && issues.Station_Id != station_id)
                     throw new UnauthorizedAccessException("You are not authorized to update this issue.");
 
                 // Update query
@@ -186,7 +186,6 @@ namespace tovutigrpapi.Repositories
                         issues.Status,
                         issues.Station_Id
                     });
-
                 return result > 0 ? "Issue updated successfully." : "Issue not found or update failed.";
             }
         }
@@ -211,7 +210,7 @@ namespace tovutigrpapi.Repositories
                 SELECT i.* 
                 FROM Issues i
                 INNER JOIN Gadgets g ON i.Gadget_Id = g.Id
-                INNER JOIN Stations s ON g.Station_Id = s.Id";
+                INNER JOIN Station s ON g.Station_Id = s.Id";
 
                 return await connection.QueryAsync<Issues>(sql);
             }

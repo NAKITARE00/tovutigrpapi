@@ -16,11 +16,11 @@ namespace tovutigrpapi.Controllers
         }
 
         [HttpGet("GetAllSpareParts")]
-        public async Task<IActionResult> GetAllSpareParts()
+        public async Task<IActionResult> GetAllSpareParts(int staff_id)
         {
             try
             {
-                var parts = await _sparePartService.GetAllSpareParts();
+                var parts = await _sparePartService.GetAllSpareParts(staff_id);
                 return Ok(parts);
             }
             catch (Exception ex)
@@ -30,11 +30,11 @@ namespace tovutigrpapi.Controllers
         }
 
         [HttpGet("get-single-sparepart/{id}")]
-        public async Task<IActionResult> GetSingleSparePart(int id)
+        public async Task<IActionResult> GetSingleSparePart(int id, int staff_id)
         {
             try
             {
-                var part = await _sparePartService.GetSingleSparePart(id);
+                var part = await _sparePartService.GetSingleSparePart(id, staff_id);
                 if (part == null)
                 {
                     return NotFound($"Spare part with ID {id} not found.");
@@ -49,7 +49,7 @@ namespace tovutigrpapi.Controllers
         }
 
         [HttpPost("AddSparePart")]
-        public async Task<IActionResult> AddSparePart([FromBody] SparePart part)
+        public async Task<IActionResult> AddSparePart([FromBody] SparePart part, int staff_id)
         {
             if (part == null)
             {
@@ -58,7 +58,7 @@ namespace tovutigrpapi.Controllers
 
             try
             {
-                string result = await _sparePartService.AddSparePart(part);
+                string result = await _sparePartService.AddSparePart(part, staff_id);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -68,7 +68,7 @@ namespace tovutigrpapi.Controllers
         }
 
         [HttpPut("UpdateSparePart")]
-        public async Task<IActionResult> UpdateSparePart([FromBody] SparePart part)
+        public async Task<IActionResult> UpdateSparePart([FromBody] SparePart part, int staff_id)
         {
             if (part == null || part.Id <= 0)
             {
@@ -77,7 +77,7 @@ namespace tovutigrpapi.Controllers
 
             try
             {
-                string result = await _sparePartService.UpdateSparePart(part);
+                string result = await _sparePartService.UpdateSparePart(part, staff_id);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -87,11 +87,11 @@ namespace tovutigrpapi.Controllers
         }
 
         [HttpDelete("DeleteSparePart/{id}")]
-        public async Task<IActionResult> DeleteSparePart(int id)
+        public async Task<IActionResult> DeleteSparePart(int id, int staff_id)
         {
             try
             {
-                string result = await _sparePartService.DeleteSparePart(id);
+                string result = await _sparePartService.DeleteSparePart(id, staff_id);
                 return Ok(result);
             }
             catch (Exception ex)

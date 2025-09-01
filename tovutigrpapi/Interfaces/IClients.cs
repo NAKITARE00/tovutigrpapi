@@ -4,10 +4,11 @@ namespace tovutigrpapi.Interfaces
 {
     public interface IClients
     {
-        Task<IEnumerable<Client>> GetAllClients();
-        Task<Client> GetSingleClient(int id);
-        Task<string> AddClient(Client client);
-        Task<string> UpdateClient(Client client);
-        Task<string> DeleteClient(int id);
+        Task<IEnumerable<Client>> GetAllClients(int staff_id);
+        Task<Client> GetSingleClient(int id, int staff_id);
+        Task<string> AddClient(Client client, int staff_id);
+        Task<string> UpdateClient(Client client, int staff_id);
+        Task<string> DeleteClient(int id, int staff_id);
+        Task<IEnumerable<Client>> GetAllClientsAnalytics();
     }
 }

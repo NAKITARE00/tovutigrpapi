@@ -1,5 +1,6 @@
 using MySqlConnector;
 using System.Data;
+using System.Text.RegularExpressions;
 using tovutigrpapi.DataAccess;
 using tovutigrpapi.Interfaces;
 using tovutigrpapi.Repositories;
@@ -35,7 +36,8 @@ builder.Services.AddCors(options =>
                 "http://localhost:3000",
                 "https://sahara-assets.vercel.app",
                 "https://assets.saharafcs.com",
-                "https://assetsapi.saharafcs.com"
+                "https://assetsapi.saharafcs.com",
+                "http://127.0.0.1:8000/"
         )
             .AllowAnyHeader()
             .AllowAnyMethod()

@@ -8,6 +8,9 @@ namespace tovutigrpapi.Interfaces
         Task<string> AddUser(Users users);
         Task<Users> GetSingleUser(int userId);
         Task<string> UpdateUser(Users user);
+        Task<Users> GetUserByEmail(string email);
         Task<string> DeleteUser(int userId);
+
+        Task<IEnumerable<Role>> GetAllRoles();
     }
 }

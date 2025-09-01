@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using tovutigrpapi.Interfaces;
-using tovutigrpapi.Repositories;
 
 
 namespace tovutigrpapi.Controllers
@@ -35,9 +34,9 @@ namespace tovutigrpapi.Controllers
             {
                 Gadgets = _gadgets.GetAllGadgetsAnalytics(),
                 Issues = _issues.GetAllIssuesAnalytics(),
-                Spareparts = _spareParts.GetAllSpareParts(),
+                Spareparts = _spareParts.GetAllSparePartsAnalytics(),
                 Stations = _stations.GetAllStationsAnalytyics(),
-                Clients = _clients.GetAllClients()
+                Clients = _clients.GetAllClientsAnalytics()
             });
         }
     }

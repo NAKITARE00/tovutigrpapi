@@ -64,6 +64,22 @@ namespace tovutigrpapi.Controllers
             }
         }
 
+        [HttpGet("get-by-email/{email}")]
+        public async Task<IActionResult> GetUserByEmail(string email)
+        {
+            try
+            {
+                var user = await _users.GetUserByEmail(email);
+                if (user == null)
+                    return NotFound($"User with email {email} not found.");
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
         [HttpPut("UpdateUser")]
         public async Task<IActionResult> UpdateUser([FromBody] Users user)
         {
@@ -94,5 +110,21 @@ namespace tovutigrpapi.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
+        [HttpGet("GetAllRoles")]
+        public async Task<IActionResult> GetAllRoles()
+        {
+            try
+            {
+                IEnumerable<Role> roles = await _users.GetAllRoles();
+                return Ok(roles);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+
     }
 }

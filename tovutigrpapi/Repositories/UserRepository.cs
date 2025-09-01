@@ -129,7 +129,24 @@ namespace tovutigrpapi.Repositories
             }
         }
 
-
+        public async Task<Users?> GetUserByEmail(string email)
+        {
+            string sql = @"
+        SELECT
+            s.Id, s.Name, s.HashPassword, s.Salt, s.Email, s.RoleId, r.UserType, r.RoleName, 
+            s.Client_Id AS ClientId,s.Station_Id AS StationId, c.Name  AS ClientName,st.Name AS StationName, st.Location AS StationLocation
+        FROM Staff s
+        LEFT JOIN Clients c ON c.Id = s.Client_Id
+        LEFT JOIN Station st ON st.Id = s.Station_Id
+        LEFT JOIN Roles r ON r.RoleId = s.RoleId
+        WHERE s.Email = @Email;
+        ";
+            
+            using (IDbConnection connection = _dataContext.CreateConnection())
+            {
+                return await connection.QueryFirstOrDefaultAsync<Users>(sql, new { Email = email });
+            }
+        }
         public async Task<string> DeleteUser(int userId)
         {
             string sql = "DELETE FROM Staff WHERE Id = @UserId;";
@@ -138,6 +155,15 @@ namespace tovutigrpapi.Repositories
             {
                 var result = await connection.ExecuteAsync(sql, new { UserId = userId });
                 return result > 0 ? "User deleted successfully." : "User not found or could not be deleted.";
+            }
+        }
+
+        public async Task<IEnumerable<Role>> GetAllRoles()
+        {
+            string sql = "SELECT RoleId, UserType, RoleName FROM Roles;";
+            using (IDbConnection connection = _dataContext.CreateConnection())
+            {
+                return await connection.QueryAsync<Role>(sql);
             }
         }
     }

@@ -69,27 +69,29 @@ namespace tovutigrpapi.Repositories
                 return "Gadget added successfully.";
             }
         }
-
         public async Task<IEnumerable<GadgetRetrieval>> GetAllGadgets(int staff_id)
         {
-            var (_, roleName, _, clientId, station_id) = await _authorizationService.GetUserRole(staff_id);
+            var (userType, roleName, _, clientId, station_id) = await _authorizationService.GetUserRole(staff_id);
             if (string.IsNullOrEmpty(roleName))
                 throw new UnauthorizedAccessException("User has no assigned role.");
 
             if (roleName != "Admin" && roleName != "Manager" && roleName != "Normal")
                 throw new UnauthorizedAccessException("User role not recognized.");
-            string sql = @"
-        SELECT g.Id AS GadgetId, g.Name, g.Status, g.Station_Id, g.Serial_No, g.IMEI1, g.IMEI2,
-               s.Name AS StationName, s.Location
-        FROM Gadgets g
-        JOIN Station s ON g.Station_Id = s.Id
-        WHERE g.Deleted = 'NotDeleted'";
 
-            if (roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase))
-                sql += " AND s.Client_Id = @ClientId";
-            else if (roleName.Equals("Manager", StringComparison.OrdinalIgnoreCase))
-                sql += " AND s.Client_Id = @ClientId AND s.Id = @StationId";
+            string sql = "SELECT g.Id AS GadgetId, g.Name, g.Status, g.Station_Id, g.Serial_No, g.IMEI1, g.IMEI2, " +
+                         "s.Name AS StationName, s.Location " +
+                         "FROM Gadgets g JOIN Station s ON g.Station_Id = s.Id " +
+                         "WHERE g.Deleted = 'NotDeleted'";
 
+            if (!roleName.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                if (userType == "Administrator" && roleName == "Manager")
+                    sql += " AND s.Client_Id = @ClientId";
+                else if (userType == "Supervisor" && roleName == "Manager")
+                    sql += " AND s.Client_Id = @ClientId AND s.Id = @StationId";
+                else if (roleName == "Normal")
+                    sql += " AND s.Id = @StationId";
+            }
             using (var connection = _dataContext.CreateConnection())
             {
                 var gadgets = (await connection.QueryAsync<GadgetRetrieval>(sql, new { ClientId = clientId, StationId = station_id })).ToList();
@@ -97,10 +99,9 @@ namespace tovutigrpapi.Repositories
                 foreach (var gadget in gadgets)
                 {
                     var sparePartNames = await connection.QueryAsync<string>(
-                        @"SELECT sp.Name 
-                  FROM Spare_Parts sp
-                  JOIN Gadget_SpareParts gsp ON sp.Id = gsp.sparepart_id
-                  WHERE gsp.gadget_id = @GadgetId",
+                        "SELECT sp.Name FROM Spare_Parts sp " +
+                        "JOIN Gadget_SpareParts gsp ON sp.Id = gsp.sparepart_id " +
+                        "WHERE gsp.gadget_id = @GadgetId",
                         new { GadgetId = gadget.GadgetId });
 
                     gadget.SparePartNames = sparePartNames.ToList();
@@ -109,20 +110,16 @@ namespace tovutigrpapi.Repositories
                 return gadgets;
             }
         }
-
         public async Task<GadgetRetrieval> GetSingleGadget(int gadgetId, int staff_id)
         {
-            var (_, roleName, client_id, _, station_id) = await _authorizationService.GetUserRole(staff_id);
+            var (userType, roleName, client_id, _, station_id) = await _authorizationService.GetUserRole(staff_id);
             if (string.IsNullOrEmpty(roleName))
                 throw new UnauthorizedAccessException("User has no assigned role.");
-
             if (roleName != "Admin" && roleName != "Manager" && roleName != "Normal")
                 throw new UnauthorizedAccessException("User role not recognized.");
-
             string clientCheckSql = @"SELECT Client_Id, Station_Id 
                               FROM Gadgets 
                               WHERE Id = @GadgetId;";
-
             using (IDbConnection connection = _dataContext.CreateConnection())
             {
                 var gadgetData = await connection.QueryFirstOrDefaultAsync<(int Client_Id, int Station_Id)>(
@@ -130,13 +127,12 @@ namespace tovutigrpapi.Repositories
 
                 if (gadgetData.Equals(default((int, int))))
                     return null;
-
-                if (roleName == "Manager" && gadgetData.Client_Id != client_id)
+                if (userType == "Administrator" && roleName == "Manager" && gadgetData.Client_Id != client_id)
                     throw new UnauthorizedAccessException("Managers can only access gadgets under their client.");
-
-                if (roleName == "Normal" && gadgetData.Station_Id != station_id)
+                if (userType == "Operator" && roleName == "Normal" && gadgetData.Station_Id != station_id)
                     throw new UnauthorizedAccessException("Operators can only access gadgets belonging to their station.");
-
+                if (userType == "Supervisor" && gadgetData.Station_Id != station_id)
+                    throw new UnauthorizedAccessException("Station Managers can only access gadgets belonging to their station.");
                 string sql = @"
             SELECT 
                 g.Id,
@@ -150,13 +146,12 @@ namespace tovutigrpapi.Repositories
             LEFT JOIN Station st ON g.Station_Id = st.Id
             WHERE g.Id = @GadgetId;
             ";
-
                 return await connection.QueryFirstOrDefaultAsync<GadgetRetrieval>(sql, new { GadgetId = gadgetId });
             }
         }
         public async Task<string> AddSparepart(int gadgetId, int sparePartId, int staff_id)
         {
-            var (staffId, roleName, _, clientId, _) = await _authorizationService.GetUserRole(staff_id);
+            var (userType, roleName, _, clientId, staffId) = await _authorizationService.GetUserRole(staff_id);
 
             if (string.IsNullOrEmpty(roleName))
                 throw new UnauthorizedAccessException("User has no assigned role.");
@@ -172,14 +167,11 @@ namespace tovutigrpapi.Repositories
 
                 if (gadgetClientId == 0)
                     throw new KeyNotFoundException("Gadget not found.");
-
-                if (roleName == "Normal")
-                    throw new UnauthorizedAccessException("Normal staff cannot add spare parts.");
-
-                if (roleName == "Manager" && gadgetClientId != clientId)
-                    throw new UnauthorizedAccessException("Manager can only add spare parts for gadgets under their client.");
-
-                var result = await connection.ExecuteAsync(
+                if (userType == "Supervisor" || roleName == "Normal")
+                    throw new UnauthorizedAccessException("Cannot add spare parts.");
+                if (userType == "Administrator" && roleName == "Manager" && gadgetClientId != clientId)
+                    throw new UnauthorizedAccessException("Unauthorized Client");
+               var result = await connection.ExecuteAsync(
                     @"INSERT INTO Gadget_SpareParts (gadget_id, sparepart_id)
                     VALUES (@GadgetId, @SparePartId);",
                     new { GadgetId = gadgetId, SparePartId = sparePartId });
@@ -189,10 +181,9 @@ namespace tovutigrpapi.Repositories
                     : "Failed to add spare part to gadget.";
             }
         }
-
         public async Task<IEnumerable<GadgetRetrieval>> GetGadgetsByStationId(int stationId, int staff_id)
         {
-            var (_, roleName, client_id, _, station_id) = await _authorizationService.GetUserRole(staff_id);
+            var (userType, roleName, client_id, _, station_id) = await _authorizationService.GetUserRole(staff_id);
             if (string.IsNullOrEmpty(roleName))
                 throw new UnauthorizedAccessException("User has no assigned role.");
             if (roleName != "Admin" && roleName != "Manager" && roleName != "Normal")
@@ -211,7 +202,7 @@ namespace tovutigrpapi.Repositories
             {
                 var gadgets = (await connection.QueryAsync<GadgetRetrieval>(sql, new { StationId = stationId })).ToList();
 
-                if (roleName == "Manager")
+                if (userType == "Administrator" && roleName == "Manager")
                 {
                     var stationCheck = await connection.QueryFirstOrDefaultAsync<int?>(
                         "SELECT Client_Id FROM Station WHERE Id = @StationId",
@@ -220,7 +211,7 @@ namespace tovutigrpapi.Repositories
                     if (stationCheck == null || stationCheck != client_id)
                         throw new UnauthorizedAccessException("Managers can only access gadgets under their client.");
                 }
-                else if (roleName == "Normal")
+                else if (userType == "Supervisor" || roleName == "Normal")
                 {                    if (stationId != station_id)
                         throw new UnauthorizedAccessException("Operators can only access gadgets belonging to their station.");
                 }
@@ -244,10 +235,9 @@ namespace tovutigrpapi.Repositories
             }
         }
 
-
         public async Task<string> UpdateGadget(Gadgets gadget, int staff_id)
         {
-            var (_, roleName, _, clientId, _) = await _authorizationService.GetUserRole(staff_id);
+            var (userType, roleName, _, clientId, stationId) = await _authorizationService.GetUserRole(staff_id);
 
             if (string.IsNullOrEmpty(roleName))
                 throw new UnauthorizedAccessException("User has no assigned role.");
@@ -263,8 +253,10 @@ namespace tovutigrpapi.Repositories
 
                 if (roleName == "Normal")
                     throw new UnauthorizedAccessException("Normal users are not allowed to update gadgets.");
-                if (roleName == "Manager" && gadgetClientId != clientId)
+                if (userType == "Administrator" && roleName == "Manager" && gadgetClientId != clientId)
                     throw new UnauthorizedAccessException("Manager cannot update gadgets outside their client scope.");
+                if (userType == "Supervisor" && roleName == "Manager" && gadget.Station_Id != stationId)
+                    throw new UnauthorizedAccessException("Station Managers cannot update gadgets outside station scope.");
 
                 string updateSql = "UPDATE Gadgets SET Name=@Name, Status=@Status, Station_Id=@Station_Id, Serial_No=@Serial_No, IMEI1=@IMEI1, IMEI2=@IMEI2 WHERE Id=@Id;";
                 await connection.ExecuteAsync(updateSql, new
