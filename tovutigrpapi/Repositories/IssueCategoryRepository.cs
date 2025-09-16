@@ -87,7 +87,7 @@ namespace tovutigrpapi.Repositories
                 SELECT i.* 
                 FROM Issues i
                 INNER JOIN Gadgets g ON i.Gadget_Id = g.Id
-                INNER JOIN Stations s ON g.Station_Id = s.Id";
+                INNER JOIN Station s ON g.Station_Id = s.Id";
 
                     return await connection.QueryAsync<Issues>(sql);
                 }
@@ -97,7 +97,7 @@ namespace tovutigrpapi.Repositories
                 SELECT i.* 
                 FROM Issues i
                 INNER JOIN Gadgets g ON i.Gadget_Id = g.Id
-                INNER JOIN Stations s ON g.Station_Id = s.Id
+                INNER JOIN Station s ON g.Station_Id = s.Id
                 WHERE s.Client_Id = @ClientId";
 
                     return await connection.QueryAsync<Issues>(sql, new { ClientId = clientId });
@@ -129,12 +129,12 @@ namespace tovutigrpapi.Repositories
                               g.Name AS Gadget_Name, st.Name AS Station_Name
                        FROM Issues i
                        LEFT JOIN Gadgets g ON i.Gadget_Id = g.Id
-                       LEFT JOIN Stations st ON i.Station_Id = st.Id
+                       LEFT JOIN Station st ON i.Station_Id = st.Id
                        WHERE i.Id = @IssueId;";
 
                 string clientSql = @"SELECT st.Client_Id
                              FROM Issues i
-                             LEFT JOIN Stations st ON i.Station_Id = st.Id
+                             LEFT JOIN Station st ON i.Station_Id = st.Id
                              WHERE i.Id = @IssueId;";
 
                 var issue = await connection.QueryFirstOrDefaultAsync<IssueRetrieval>(sql, new { IssueId = issueId });

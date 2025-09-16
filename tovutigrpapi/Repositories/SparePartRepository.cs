@@ -28,7 +28,7 @@ namespace tovutigrpapi.Repositories
                 throw new UnauthorizedAccessException("User role not recognized.");
 
             string sql = @"
-        SELECT sp.Id, sp.Name, sp.Description, sp.Quantity
+        SELECT sp.Id, sp.Name, sp.Cost, sp.Status, sp.Station_Id
         FROM Spare_Parts sp
         JOIN Gadget_SpareParts gsp ON sp.Id = gsp.sparepart_id
         JOIN Gadgets g ON gsp.gadget_id = g.Id
@@ -88,10 +88,7 @@ namespace tovutigrpapi.Repositories
                     if (part.Station_Id != station_id)
                         throw new UnauthorizedAccessException("Supervisors and Normal users can only add spare parts to their assigned station.");
                 }
-                else
-                {
-                    throw new UnauthorizedAccessException("User not authorized to add spare parts.");
-                }
+                
 
                 string sql = @"
                 INSERT INTO Spare_Parts (Name, Cost, Status, Station_Id)
@@ -138,10 +135,6 @@ namespace tovutigrpapi.Repositories
                     if (part.Station_Id != station_id)
                         throw new UnauthorizedAccessException("Supervisors/Normal users can only access spare parts in their station.");
                 }
-                else
-                {
-                    throw new UnauthorizedAccessException("User not authorized to view spare parts.");
-                }
 
                 const string gadgetsSql = @"SELECT g.Name 
                                     FROM Gadgets g
@@ -181,10 +174,7 @@ namespace tovutigrpapi.Repositories
                     if (existing.Station_Id != station_id)
                         throw new UnauthorizedAccessException("Supervisors/Normal users can only update spare parts in their station.");
                 }
-                else
-                {
-                    throw new UnauthorizedAccessException("User not authorized to update spare parts.");
-                }
+               
 
                 const string sql = @"UPDATE Spare_Parts
                              SET Name = @Name,
