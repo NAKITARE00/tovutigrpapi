@@ -14,7 +14,7 @@ namespace tovutigrpapi.Services
             _dataContext = dataContext;
         }
 
-        public async Task<Users?> GetUserById(int staffId)
+        public async Task<UsersRetrieval> GetUserById(int staffId)
         {
             string sql = @"
                 SELECT
@@ -38,7 +38,7 @@ namespace tovutigrpapi.Services
 
             using (IDbConnection connection = _dataContext.CreateConnection())
             {
-                return await connection.QueryFirstOrDefaultAsync<Users>(sql, new { StaffId = staffId });
+                return await connection.QueryFirstOrDefaultAsync<UsersRetrieval>(sql, new { StaffId = staffId });
             }
         }
 

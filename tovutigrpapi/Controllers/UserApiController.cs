@@ -21,7 +21,7 @@ namespace tovutigrpapi.Controllers
         {
             try
             {
-                IEnumerable<Users> users = await _users.GetAllUsers();
+                IEnumerable<UsersRetrieval> users = await _users.GetAllUsers();
                 return Ok(users);
             }
             catch (Exception ex)

@@ -72,7 +72,7 @@ namespace tovutigrpapi.Repositories
             }
         }
 
-        public async Task<IEnumerable<Users>> GetAllUsers()
+        public async Task<IEnumerable<UsersRetrieval>> GetAllUsers()
         {
             string sql = @"
         SELECT
@@ -96,11 +96,11 @@ namespace tovutigrpapi.Repositories
 
             using (IDbConnection connection = _dataContext.CreateConnection())
             {
-                return await connection.QueryAsync<Users>(sql);
+                return await connection.QueryAsync<UsersRetrieval>(sql);
             }
         }
 
-        public async Task<Users?> GetSingleUser(int userId)
+        public async Task<UsersRetrieval?> GetSingleUser(int userId)
         {
             string sql = @"
         SELECT
@@ -125,11 +125,11 @@ namespace tovutigrpapi.Repositories
 
             using (IDbConnection connection = _dataContext.CreateConnection())
             {
-                return await connection.QueryFirstOrDefaultAsync<Users>(sql, new { UserId = userId });
+                return await connection.QueryFirstOrDefaultAsync<UsersRetrieval>(sql, new { UserId = userId });
             }
         }
 
-        public async Task<Users?> GetUserByEmail(string email)
+        public async Task<UsersRetrieval?> GetUserByEmail(string email)
         {
             string sql = @"
         SELECT
@@ -144,7 +144,7 @@ namespace tovutigrpapi.Repositories
             
             using (IDbConnection connection = _dataContext.CreateConnection())
             {
-                return await connection.QueryFirstOrDefaultAsync<Users>(sql, new { Email = email });
+                return await connection.QueryFirstOrDefaultAsync<UsersRetrieval>(sql, new { Email = email });
             }
         }
         public async Task<string> DeleteUser(int userId)

@@ -17,6 +17,7 @@ namespace tovutigrpapi.Repositories
             _authorizationService = authorizationService;
         }
 
+
         public async Task<IEnumerable<SparePart>> GetAllSpareParts(int staff_id)
         {
             var (userType, roleName, _, clientId, station_id) = await _authorizationService.GetUserRole(staff_id);
@@ -28,12 +29,13 @@ namespace tovutigrpapi.Repositories
                 throw new UnauthorizedAccessException("User role not recognized.");
 
             string sql = @"
-        SELECT sp.Id, sp.Name, sp.Cost, sp.Status, sp.Station_Id
-        FROM Spare_Parts sp
-        JOIN Gadget_SpareParts gsp ON sp.Id = gsp.sparepart_id
-        JOIN Gadgets g ON gsp.gadget_id = g.Id
-        JOIN Station s ON g.Station_Id = s.Id
-        WHERE g.Deleted = 'NotDeleted'";
+                SELECT DISTINCT sp.Id, sp.Name, sp.Cost, sp.Status, sp.Station_Id
+                FROM Spare_Parts sp
+                LEFT JOIN Gadget_SpareParts gsp ON sp.Id = gsp.sparepart_id
+                LEFT JOIN Gadgets g ON gsp.gadget_id = g.Id
+                LEFT JOIN Station s ON sp.Station_Id = s.Id
+                WHERE (g.Id IS NULL OR g.Deleted = 'NotDeleted')";
+            
 
             if (userType == "Administrator" && roleName == "Manager")
             {
@@ -60,7 +62,7 @@ namespace tovutigrpapi.Repositories
                 SELECT g.Name
                 FROM Gadgets g
                 JOIN Gadget_SpareParts gsp ON g.Id = gsp.gadget_id
-                WHERE gsp.sparepart_id = @SparePartId",
+                WHERE gsp.sparepart_id = @SparePartId AND g.Deleted = 'NotDeleted'",
                         new { SparePartId = part.Id });
 
                     part.LinkedGadgetNames = gadgetNames.ToList();
@@ -69,6 +71,7 @@ namespace tovutigrpapi.Repositories
                 return spareParts;
             }
         }
+
         public async Task<string> AddSparePart(SparePart part, int staff_id)
         {
             var (userType, roleName, _, clientId, station_id) = await _authorizationService.GetUserRole(staff_id);

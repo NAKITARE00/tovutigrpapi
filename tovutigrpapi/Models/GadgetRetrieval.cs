@@ -2,7 +2,7 @@
 {
     public class GadgetRetrieval
     {
-        public int GadgetId { get; set; }
+        public int Id { get; set; }
         public string Name { get; set; }
         public string Status { get; set; }
         public int Station_Id { get; set; }

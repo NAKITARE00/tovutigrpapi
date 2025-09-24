@@ -102,7 +102,7 @@ namespace tovutigrpapi.Repositories
                         "SELECT sp.Name FROM Spare_Parts sp " +
                         "JOIN Gadget_SpareParts gsp ON sp.Id = gsp.sparepart_id " +
                         "WHERE gsp.gadget_id = @GadgetId",
-                        new { GadgetId = gadget.GadgetId });
+                        new { GadgetId = gadget.Id });
 
                     gadget.SparePartNames = sparePartNames.ToList();
                 }
@@ -117,7 +117,7 @@ namespace tovutigrpapi.Repositories
                 throw new UnauthorizedAccessException("User has no assigned role.");
             if (roleName != "Admin" && roleName != "Manager" && roleName != "Normal")
                 throw new UnauthorizedAccessException("User role not recognized.");
-            string clientCheckSql = @"SELECT Client_Id, Station_Id 
+            string clientCheckSql = @"SELECT Station_Id 
                               FROM Gadgets 
                               WHERE Id = @GadgetId;";
             using (IDbConnection connection = _dataContext.CreateConnection())
@@ -137,9 +137,9 @@ namespace tovutigrpapi.Repositories
             SELECT 
                 g.Id,
                 g.Name,
-                g.Description,
-                g.SerialNumber,
-                g.Category,
+                g.Serial_No,
+                g.Imei1,
+                g.Imei2,
                 g.Station_Id,
                 st.Name AS Station_Name
             FROM Gadgets g
@@ -226,7 +226,7 @@ namespace tovutigrpapi.Repositories
                 FROM Spare_Parts sp
                 JOIN Gadget_SpareParts gsp ON sp.Id = gsp.sparepart_id
                 WHERE gsp.gadget_id = @GadgetId",
-                        new { GadgetId = gadget.GadgetId });
+                        new { GadgetId = gadget.Id });
 
                     gadget.SparePartNames = sparePartNames.ToList();
                 }
@@ -346,7 +346,7 @@ namespace tovutigrpapi.Repositories
                   FROM Spare_Parts sp
                   JOIN Gadget_SpareParts gsp ON sp.Id = gsp.sparepart_id
                   WHERE gsp.gadget_id = @GadgetId",
-                        new { GadgetId = gadget.GadgetId });
+                        new { GadgetId = gadget.Id });
                     gadget.SparePartNames = sparePartNames.ToList();
                 }
                 return gadgets;

@@ -37,7 +37,7 @@ builder.Services.AddCors(options =>
                 "https://sahara-assets.vercel.app",
                 "https://assets.saharafcs.com",
                 "https://assetsapi.saharafcs.com",
-                "http://127.0.0.1:8000/"
+                "http://127.0.0.1:8000"
         )
             .AllowAnyHeader()
             .AllowAnyMethod()

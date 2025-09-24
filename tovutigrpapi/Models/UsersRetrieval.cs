@@ -1,6 +1,6 @@
 ﻿namespace tovutigrpapi.Models
 {
-    public class Users
+    public class UsersRetrieval
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
@@ -24,7 +24,7 @@
         public int RoleId { get; set; }
         public string UserType { get; set; }
         public string RoleName { get; set; }
-        public ICollection<Users> Users { get; set; }
+        public ICollection<UsersRetrieval> Users { get; set; }
     }
 }
 
